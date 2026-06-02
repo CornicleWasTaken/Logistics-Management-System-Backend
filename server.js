@@ -99,4 +99,4 @@ app.use(errorHandler);
 
 
 //Don't use app.listen() when running on vercel, export the app instead
-module.exports = app;
+export default app;
