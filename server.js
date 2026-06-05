@@ -66,7 +66,7 @@ app.use("/api/vehicles", vehicleRoutes);
 
 app.use("/api/warehouses", warehouseRoutes);
 
-app.use("/api/dispatch", dispatchRoutes);
+app.use("/api", dispatchRoutes);
 
 app.use("/api/notifications", notificationRoutes);
 

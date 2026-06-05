@@ -26,8 +26,9 @@ router.put("/:id", protect, authorizeRoles("admin"), updateShipment);
 
 // DELETE
 router.delete("/:id", protect, authorizeRoles("admin"), deleteShipment);
-export default router;
 // tracking id
 router.get("/tracking/:trackingId", protect, getShipmentByTrackingId);
 //Complete
 router.put("/:id/complete", protect, authorizeRoles("admin"), completeShipment);
+
+export default router;

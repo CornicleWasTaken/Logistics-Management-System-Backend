@@ -57,24 +57,26 @@ export const updateShipment = async (req, res) => {
 
     const existingShipment = await Shipment.findById(req.params.id);
 
-    if (existingShipment && existingShipment.status === "Delivered") {
-      return res.status(400).json({
-        success: false,
-        message: "Delivered shipment cannot be modified",
-      });
-    }
-
-    if (!shipment) {
+    if (!existingShipment) {
       return res.status(404).json({
         success: false,
         message: "Shipment not found",
       });
     }
 
+    if (existingShipment.status === "Delivered") {
+      return res.status(400).json({
+        success: false,
+        message: "Delivered shipment cannot be modified",
+      });
+    }
+
+    const updatedShipment = await Shipment.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
     res.status(200).json({
       success: true,
       message: "Shipment Updated",
-      shipment,
+      shipment: updatedShipment,
     });
   } catch (error) {
     res.status(500).json({
