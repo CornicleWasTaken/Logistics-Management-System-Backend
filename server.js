@@ -44,6 +44,32 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// DATABASE CONNECTION
+let isConnected = false;
+
+async function connectToMongoDB() {
+  if (!isConnected) {
+    console.log("MONGO_URI exists:", !!process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB Connected");
+    isConnected = true;
+  }
+}
+
+// Ensure Database Connection for every request
+app.use(async (req, res, next) => {
+  try {
+    await connectToMongoDB();
+    next();
+  } catch (error) {
+    console.error("Error connecting to MongoDB:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+    });
+  }
+});
+
 // ROOT ROUTE
 app.get("/", (req, res) => {
   res.send("LOMS Backend Running...");
@@ -69,39 +95,6 @@ app.use("/api/warehouses", warehouseRoutes);
 app.use("/api", dispatchRoutes);
 
 app.use("/api/notifications", notificationRoutes);
-
-// DATABASE
-//mongoose
-//  .connect(process.env.MONGO_URI)
-//  .then(() => {
-//    console.log("MongoDB Connected");
-//  })
-//  .catch((error) => {
-//    console.log(error);
-//  });
-
-let isConnected = false;
-
-async function connectToMongoDB() {
-  if (!isConnected) {
-    try {
-      await mongoose.connect(process.env.MONGO_URI);
-      console.log("MongoDB Connected");
-      isConnected = true;
-    } catch (error) {
-      console.log(' Error connecting to MongoDB:', error);
-    }
-  }
-}
-
-// add middleware
-app.use(async (req, res, next) => {
-  if (!isConnected) {
-    await connectToMongoDB();
-  }
-  next();
-});
-
 
 // ERROR HANDLER
 app.use(errorHandler);
