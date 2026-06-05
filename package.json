@@ -7,7 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server",
     "vercel-start": "node server.js"
-
   },
   "keywords": [],
   "author": "",
@@ -21,6 +20,7 @@
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
+    "geolib": "^3.3.14",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
