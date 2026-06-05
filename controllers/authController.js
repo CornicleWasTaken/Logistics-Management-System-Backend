@@ -19,10 +19,10 @@ export const registerUser = asyncHandler(async (req, res) => {
     throw new Error(errors.array()[0].msg);
   }
 
-  const { username, password, role } = req.body;
+  const { name, email, password, role } = req.body;
 
   // CHECK USER
-  const existingUser = await User.findOne({ username });
+  const existingUser = await User.findOne({ email });
 
   if (existingUser) {
     res.status(400);
@@ -35,7 +35,8 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   // CREATE USER
   const user = await User.create({
-    username,
+    name,
+    email,
     password: hashedPassword,
     role,
   });
@@ -49,15 +50,15 @@ export const registerUser = asyncHandler(async (req, res) => {
 
 // LOGIN USER
 export const loginUser = asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
   // CHECK USER
-  const user = await User.findOne({ username });
+  const user = await User.findOne({ email });
 
   if (!user) {
     res.status(401);
 
-    throw new Error("Invalid username");
+    throw new Error("Invalid email");
   }
 
   // PASSWORD CHECK
@@ -73,7 +74,7 @@ export const loginUser = asyncHandler(async (req, res) => {
   const token = jwt.sign(
     {
       id: user._id,
-      username: user.username,
+      email: user.email,
       role: user.role,
     },
     process.env.JWT_SECRET,
