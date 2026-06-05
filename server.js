@@ -14,6 +14,11 @@ import inventoryRoutes from "./routes/inventoryRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import shipmentRoutes from "./routes/shipmentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import driverRoutes from "./routes/driverRoutes.js";
+import vehicleRoutes from "./routes/vehicleRoutes.js";
+import warehouseRoutes from "./routes/warehouseRoutes.js";
+import dispatchRoutes from "./routes/dispatchRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 // ERROR MIDDLEWARE
 import errorHandler from "./middleware/errorMiddleware.js";
@@ -54,6 +59,16 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/shipments", shipmentRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/drivers", driverRoutes);
+
+app.use("/api/vehicles", vehicleRoutes);
+
+app.use("/api/warehouses", warehouseRoutes);
+
+app.use("/api/dispatch", dispatchRoutes);
+
+app.use("/api/notifications", notificationRoutes);
 
 // DATABASE
 //mongoose
