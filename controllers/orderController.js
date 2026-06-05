@@ -87,11 +87,13 @@ export const getOrders = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      currentPage: page,
-      totalPages: Math.ceil(totalOrders / limit),
-      totalOrders,
-      count: orders.length,
-      orders,
+      data: orders,
+      meta: {
+        totalCount: totalOrders,
+        currentPage: page,
+        totalPages: Math.ceil(totalOrders / limit),
+        limit: limit
+      }
     });
   } catch (error) {
     res.status(500).json({

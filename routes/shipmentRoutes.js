@@ -5,6 +5,8 @@ import {
   getShipments,
   updateShipment,
   deleteShipment,
+  completeShipment,
+  getShipmentByTrackingId,
 } from "../controllers/shipmentController.js";
 
 import { protect } from "../middleware/authMiddleware.js";
@@ -25,3 +27,7 @@ router.put("/:id", protect, authorizeRoles("admin"), updateShipment);
 // DELETE
 router.delete("/:id", protect, authorizeRoles("admin"), deleteShipment);
 export default router;
+// tracking id
+router.get("/tracking/:trackingId", protect, getShipmentByTrackingId);
+//Complete
+router.put("/:id/complete", protect, authorizeRoles("admin"), completeShipment);

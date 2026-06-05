@@ -14,10 +14,45 @@ const shipmentSchema = new mongoose.Schema(
       required: true,
     },
 
-    currentLocation: {
-      type: String,
-      default: "Warehouse",
+    driverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Driver",
     },
+
+    vehicleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Vehicle",
+    },
+
+    currentLocation: {
+      address: {
+        type: String,
+        default: "Warehouse",
+      },
+      coordinates: {
+        type: {
+          type: String,
+          enum: ["Point"],
+          default: "Point",
+        },
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+          default: [0, 0], // Optional default
+        },
+      },
+    },
+
+    locationHistory: [
+      {
+        coordinates: {
+          type: [Number], // [longitude, latitude]
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
 
     status: {
       type: String,
@@ -27,6 +62,18 @@ const shipmentSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+shipmentSchema.set("toJSON", {
+  virtuals: true,
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
+shipmentSchema.index({ "currentLocation.coordinates": "2dsphere" });
 
 const Shipment = mongoose.model("Shipment", shipmentSchema);
 

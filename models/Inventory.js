@@ -27,6 +27,16 @@ const inventorySchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+inventorySchema.set("toJSON", {
+  virtuals: true,
+  transform: (doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 const Inventory = mongoose.model("Inventory", inventorySchema);
 
 export default Inventory;

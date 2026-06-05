@@ -1,30 +1,44 @@
 # Logistics Management System (LOMS) Backend Documentation
-
-## 1. Project Overview
-
+# 1. Project Overview
 **Project Name:** Logistics Management System (LOMS)
-LOMS backend is designed to manage logistics operations including:
-* User Authentication & Authorization
+LOMS backend is a scalable logistics platform designed for managing:
+
+* Authentication & Authorization
 * Inventory Management
 * Order Processing
-* Shipment Tracking
+* Shipment Management
+* Dispatch Assignment
+* Driver & Vehicle Management
+* Real-Time Shipment Tracking
+* Route Optimization
 * Dashboard Analytics
-The backend follows a modular architecture using REST APIs and MVC design pattern.
+* Warehouse Operations
+
+The backend follows:
+* REST API Architecture
+* MVC Pattern
+* Modular Structure
+* JWT Authentication
+* Role Based Access Control
+* Real-Time Socket Architecture
+
 ---
 # 2. Technology Stack
 
-| Technology         | Usage               |
-| ------------------ | ------------------- |
-| Node.js            | Runtime Environment |
-| Express.js         | Backend Framework   |
-| MongoDB            | Database            |
-| Mongoose           | ODM for MongoDB     |
-| JWT                | Authentication      |
-| bcryptjs           | Password Hashing    |
-| Helmet             | Security Middleware |
-| Morgan             | Logging             |
-| Express Rate Limit | API Protection      |
-| ES Modules         | Module System       |
+| Technology         | Usage              |
+| ------------------ | ------------------ |
+| Node.js            | Runtime            |
+| Express.js         | Backend Framework  |
+| MongoDB            | Database           |
+| Mongoose           | ODM                |
+| JWT                | Authentication     |
+| bcryptjs           | Password Hashing   |
+| Socket.IO          | Realtime Tracking  |
+| Geolib             | Route Optimization |
+| Helmet             | Security           |
+| Morgan             | Logging            |
+| Express Rate Limit | Protection         |
+| ES Modules         | Module System      |
 
 ---
 
@@ -32,454 +46,261 @@ The backend follows a modular architecture using REST APIs and MVC design patter
 
 ```plaintext
 loms-backend/
-
-├── config/
-│   └── db.js
-
-├── controllers/
-│   ├── authController.js
-│   ├── inventoryController.js
-│   ├── orderController.js
-│   ├── shipmentController.js
-│   └── dashboardController.js
-
-├── middleware/
-│   ├── authMiddleware.js
-│   ├── roleMiddleware.js
-│   └── errorMiddleware.js
-
-├── models/
-│   ├── User.js
-│   ├── Inventory.js
-│   ├── Order.js
-│   └── Shipment.js
-
-├── routes/
-│   ├── authRoutes.js
-│   ├── inventoryRoutes.js
-│   ├── orderRoutes.js
-│   ├── shipmentRoutes.js
-│   ├── dashboardRoutes.js
-│   └── testRoutes.js
-
-├── .env
-├── package.json
-├── server.js
+config/
+controllers/
+middleware/
+models/
+routes/
+sockets/
+utils/
+.env
+server.js
+package.json
 ```
-
 ---
 
 # 4. Architecture Flow
 
 ```plaintext
-Client Request
-      ↓
+Client
+ ↓
 Routes
-      ↓
+ ↓
 Middleware Layer
 (Auth / Roles / Validation)
-      ↓
+ ↓
 Controllers
-      ↓
+ ↓
 Models
-      ↓
+ ↓
 MongoDB
-      ↓
+ ↓
 Response
-```
 
----
+Realtime Tracking:
 
-# 5. Database Design (MongoDB + Mongoose)
-MongoDB is used as database with Mongoose schemas.
-
----
-## User Schema
-
-File:
-
-```plaintext
-models/User.js
-```
-
-Fields:
-
-```plaintext
-name        : String
-email       : String (unique)
-password    : String
-role        : admin / user
-timestamps
-```
-
-Purpose:
-
-```plaintext
-Authentication
-Authorization
-Role Management
-```
----
-## Inventory Schema
-File:
-
-```plaintext
-models/Inventory.js
-```
-Fields:
-```plaintext
-itemName
-category
-quantity
-warehouse
-price
-timestamps
-```
-Purpose:
-
-```plaintext
-Stock Management
-Inventory Tracking
-```
----
-## Order Schema
-
-File:
-```plaintext
-models/Order.js
-```
-Fields:
-```plaintext
-customerName
-product
-quantity
-deliveryAddress
-status
-timestamps
-```
-Status Values:
-
-```plaintext
-Pending
-Packed
-Dispatched
-Delivered
-```
-Purpose:
-
-```plaintext
-Order Processing
-Order Tracking
-```
----
-
-## Shipment Schema
-File:
-```plaintext
-models/Shipment.js
-```
-Fields:
-```plaintext
-trackingId
-orderId (ObjectId Ref)
-currentLocation
-status
-timestamps
-```
-Relationship:
-
-```plaintext
-Shipment
+Driver Device
    ↓
-orderId
+Socket Events
    ↓
-Order Collection
-```
-
-Purpose:
-```plaintext
-Shipment Tracking
-Order Mapping
+Tracking Rooms
+   ↓
+Customers / Admin Dashboard
 ```
 ---
+# 5. Modules Implemented
 
-# 6. Authentication System
-## Register API
+## Authentication Module
 
-```http
+Endpoints:
+
 POST /api/auth/register
-```
-Features:
-```plaintext
-Password Hashing
-Duplicate User Validation
-Role Support
-```
-
----
-## Login API
-
-```http
 POST /api/auth/login
-```
 
-Flow:
-
-```plaintext
-Verify User
-↓
-Compare Password
-↓
-Generate JWT
-↓
-Return Token
-```
-
-Protected APIs require:
-
-```plaintext
-Authorization: Bearer TOKEN
-```
-
+Features:
+* Password hashing
+* JWT generation
+* Protected routes
+* Role support
 ---
+## Inventory Module
 
-# 7. Role Based Access
-
-Roles Implemented:
-
-```plaintext
-Admin
-User
-```
-
-Access Flow:
-
-```plaintext
-Token
- ↓
-authMiddleware
- ↓
-roleMiddleware
- ↓
-Authorized Access
-```
-
----
-
-# 8. Inventory Module
-
-APIs:
-
-### Create Inventory
-
-```http
+Endpoints:
 POST /api/inventory
-```
-
-### Get Inventory
-
-```http
 GET /api/inventory
-```
-
-### Update Inventory
-
-```http
 PUT /api/inventory/:id
-```
-
-### Delete Inventory
-
-```http
 DELETE /api/inventory/:id
-```
+
+Features:
+* Inventory CRUD
+* Low stock monitoring
 
 ---
 
-# 9. Order Module
+## Orders Module
 
-Workflow:
+Endpoints:
 
-```plaintext
-Create Order
-   ↓
-Find Product
-   ↓
-Validate Quantity
-   ↓
-Reduce Inventory
-   ↓
-Create Order
-```
-
-APIs:
-
-```http
 POST /api/orders
-
 GET /api/orders
-
 PUT /api/orders/:id
-
 DELETE /api/orders/:id
-```
 
-Additional Features:
-
-```plaintext
-Search
-Pagination
-Filtering
-Inventory Auto Reduction
-```
-
-Examples:
-
-```http
-GET /api/orders?page=1&limit=5
-
-GET /api/orders?keyword=Aman
-
-GET /api/orders?status=Pending
-```
+Features:
+* Inventory reduction
+* Status management
+* Pagination ready
+* Filtering ready
 
 ---
+## Shipment Module
 
-# 10. Shipment Module
-
-Workflow:
-
-```plaintext
-Order Created
-     ↓
-Shipment Generated
-     ↓
-Tracking Updates
-     ↓
-Delivery Completed
-```
-
-APIs:
-
-```http
+Endpoints:
 POST /api/shipments
-
 GET /api/shipments
-
 PUT /api/shipments/:id
-
 DELETE /api/shipments/:id
-```
+PUT /api/shipments/:id/complete
+GET /api/shipments/tracking/:trackingId
+
+Features:
+
+* Shipment lifecycle
+* Location history
+* Tracking ID support
+* Delivery completion workflow
 
 ---
 
-# 11. Dashboard Analytics
+## Dispatch Module
+Endpoints:
 
-API:
+POST /api/shipments/:id/assign
+GET /api/shipments/:id/tracking
 
-```http
+Features:
+
+* Driver assignment
+* Vehicle assignment
+* Duplicate assignment prevention
+* Delivered shipment protection
+* Availability validation
+---
+
+## Driver Module
+
+Endpoints:
+
+GET /api/drivers
+POST /api/drivers
+PUT /api/drivers/:id
+DELETE /api/drivers/:id
+
+Statuses:
+
+available
+assigned
+resting
+offline
+
+---
+
+## Vehicle Module
+
+Endpoints:
+GET /api/vehicles
+POST /api/vehicles
+PUT /api/vehicles/:id
+DELETE /api/vehicles/:id
+
+---
+
+## Warehouse Module
+
+Endpoints:
+GET /api/warehouses
+POST /api/warehouses
+PUT /api/warehouses/:id
+DELETE /api/warehouses/:id
+POST /api/warehouses/transfer
+
+Features:
+
+* Warehouse inventory allocation
+* Inventory transfer support
+---
+
+# 6. Real-Time Tracking System
+
+Socket Connection:
+```text
+http://localhost:5000
+```
+Authentication:
+```js
+auth:{
+ token:"JWT_TOKEN"
+}
+```
+Events:
+
+subscribe_tracking
+update_location
+location_updated
+
+Features:
+* JWT authenticated sockets
+* Tracking rooms
+* Live location updates
+* Tracking history persistence
+* GeoJSON coordinates
+---
+
+# 7. Route Optimization
+
+Endpoint:
+POST /api/dispatch/optimize-route
+
+Uses:
+* Geolib
+* Distance calculations
+* ETA estimation
+* Optimized delivery sequence
+---
+
+# 8. Dashboard Analytics
+
+Endpoint:
 GET /api/dashboard/stats
-```
-
+-*
 Metrics:
-
-```plaintext
-Total Orders
-Total Inventory
-Total Shipments
-Delivered Orders
-Pending Orders
-Low Stock Count
-```
-
+* Total Orders
+* Inventory Count
+* Shipment Count
+* Driver Availability
+* Vehicle Availability
+* Delivered Shipments
+* Low Stock Count
 ---
-
-# 12. Security Features
+# 9. Security Features
 
 Implemented:
-
-```plaintext
-JWT Authentication
-Password Hashing
-Helmet Security
-Role Based Access
-Rate Limiting
-Protected Routes
-Error Handling Middleware
-```
-
+* JWT Authentication
+* Password Hashing
+* Role Based Access
+* Helmet
+* Rate Limiting
+* Protected APIs
+* Error Middleware
 ---
-
-# 13. Environment Variables
-
-`.env`
+# 10. Environment Variables
 
 ```env
 PORT=5000
-
-MONGO_URI=your_mongodb_connection
-
-JWT_SECRET=your_secret
+MONGO_URI=YOUR_CONNECTION_STRING
+JWT_SECRET=YOUR_SECRET
 ```
-
 ---
-
-# 14. Installation Guide
-
-Install Dependencies:
-
+# 11. Installation
+Install:
 ```bash
 npm install
 ```
-
-Run Project:
-
+Run:
 ```bash
 npm run dev
 ```
-
 ---
-
-# 15. API Testing Flow
-
-```plaintext
-Register User
-    ↓
-Login
-    ↓
-Inventory APIs
-    ↓
-Orders APIs
-    ↓
-Shipment APIs
-    ↓
-Dashboard APIs
-```
-
----
-
-# 16. Current Project Status
-
+# 12. Current Status
 Completed:
-
-```plaintext
-Authentication Module
-Inventory CRUD
-Order CRUD
-Shipment Management
-Dashboard Analytics
-MongoDB Integration
-ES Module Migration
-Security Middleware
-```
-
-Pending:
-
-```plaintext
-Frontend Integration
-Deployment
-Swagger Documentation
-Advanced Validation
-```
-
-Ye documentation structure professional bhi hai aur onboarding-friendly bhi. Isko repo ke root me `README.md` + detailed version `PROJECT_DOCUMENTATION.md` me rakh sakti ho.
+Authentication
+Orders
+Inventory
+Shipments
+Dispatch
+Realtime Tracking
+Dashboard
+Route Optimization
+Warehouse Support
+Driver Management
+Vehicle Management
