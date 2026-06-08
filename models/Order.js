@@ -32,6 +32,15 @@ const orderSchema = new mongoose.Schema(
       enum: ["Pending", "Packed", "Dispatched", "Delivered"],
       default: "Pending",
     },
+    totalAmount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    warehouseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Warehouse",
+    },
   },
   { timestamps: true },
 );

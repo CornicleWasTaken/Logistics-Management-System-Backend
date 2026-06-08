@@ -18,6 +18,8 @@ const driverSchema = new mongoose.Schema(
       ref: "Vehicle",
     },
     currentLocation: { type: String },
+    completedDeliveries: { type: Number, default: 0 },
+    rating: { type: Number, default: 5 },
   },
   { timestamps: true }
 );

@@ -59,6 +59,12 @@ const shipmentSchema = new mongoose.Schema(
       enum: ["Packed", "In Transit", "Out For Delivery", "Delivered"],
       default: "Packed",
     },
+    estimatedDeliveryDate: { type: Date },
+    actualDeliveryDate: { type: Date },
+    warehouseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Warehouse",
+    },
   },
   { timestamps: true },
 );
