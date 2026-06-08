@@ -5,3 +5,6 @@ coverage/
 dist/
 .vercel
 .env*
+API_PAYLOADS_README.md
+Dashboard_Analytics_Plan.md
+RBAC_Changes.md

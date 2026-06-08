@@ -30,7 +30,21 @@ export const createShipment = async (req, res) => {
 // GET ALL SHIPMENTS
 export const getShipments = async (req, res) => {
   try {
-    const shipments = await Shipment.find().populate("orderId");
+    let filter = {};
+    if (req.user.role === "driver") {
+      const driver = await Driver.findOne({ userId: req.user.id });
+      if (driver) {
+        filter.driverId = driver._id;
+      } else {
+        filter.driverId = null; // Return empty if driver profile not found
+      }
+    } else if (req.user.role === "customer") {
+      const orders = await Order.find({ customerId: req.user.id }).select("_id");
+      const orderIds = orders.map(o => o._id);
+      filter.orderId = { $in: orderIds };
+    }
+
+    const shipments = await Shipment.find(filter).populate("orderId");
 
     res.status(200).json({
       success: true,

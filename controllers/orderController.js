@@ -33,6 +33,7 @@ export const createOrder = async (req, res) => {
 
     // Create order
     const order = await Order.create({
+      customerId: req.user.id,
       customerName,
       product,
       quantity,
@@ -66,6 +67,8 @@ export const getOrders = async (req, res) => {
 
     const statusFilter = req.query.status ? { status: req.query.status } : {};
 
+    const roleFilter = req.user && req.user.role === "customer" ? { customerId: req.user.id } : {};
+
     const page = Number(req.query.page) || 1;
 
     const limit = Number(req.query.limit) || 5;
@@ -75,11 +78,13 @@ export const getOrders = async (req, res) => {
     const totalOrders = await Order.countDocuments({
       ...keyword,
       ...statusFilter,
+      ...roleFilter,
     });
 
     const orders = await Order.find({
       ...keyword,
       ...statusFilter,
+      ...roleFilter,
     })
       .skip(skip)
       .limit(limit)
