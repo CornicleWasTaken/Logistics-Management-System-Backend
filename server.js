@@ -19,6 +19,7 @@ import vehicleRoutes from "./routes/vehicleRoutes.js";
 import warehouseRoutes from "./routes/warehouseRoutes.js";
 import dispatchRoutes from "./routes/dispatchRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 // ERROR MIDDLEWARE
 import errorHandler from "./middleware/errorMiddleware.js";
@@ -95,6 +96,8 @@ app.use("/api/warehouses", warehouseRoutes);
 app.use("/api", dispatchRoutes);
 
 app.use("/api/notifications", notificationRoutes);
+
+app.use("/api/reports", reportRoutes);
 
 // ERROR HANDLER
 app.use(errorHandler);
