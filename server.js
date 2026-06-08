@@ -24,6 +24,10 @@ import reportRoutes from "./routes/reportRoutes.js";
 // ERROR MIDDLEWARE
 import errorHandler from "./middleware/errorMiddleware.js";
 
+console.log("SERVER STARTED");
+console.log("Loading auth routes");
+console.log("Loading inventory routes");
+
 dotenv.config();
 
 const app = express();
