@@ -1,3 +1,13 @@
+console.log("1");
+
+import express from "express";
+console.log("2");
+
+import authRoutes from "./routes/authRoutes.js";
+console.log("3");
+
+import inventoryRoutes from "./routes/inventoryRoutes.js";
+console.log("4");
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
