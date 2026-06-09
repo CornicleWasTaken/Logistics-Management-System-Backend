@@ -71,7 +71,7 @@ export const createOrder = async (req, res) => {
     const orderData = {
       customerId,
       customerName,
-      deliveryAddress,
+      deliveryAddress: deliveryAddress || req.body.destination,
       items: orderItems,
       totalAmount,
     };

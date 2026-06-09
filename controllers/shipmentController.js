@@ -9,6 +9,10 @@ import { computeEta } from "../services/etaService.js";
 export const createShipment = async (req, res) => {
   try {
     let shipmentData = { ...req.body };
+    if (shipmentData.trackingNumber && !shipmentData.trackingId) {
+      shipmentData.trackingId = shipmentData.trackingNumber;
+    }
+
     if (typeof shipmentData.currentLocation === "string") {
       shipmentData.currentLocation = {
         address: shipmentData.currentLocation,
@@ -34,6 +38,8 @@ export const createShipment = async (req, res) => {
 export const getShipments = async (req, res) => {
   try {
     let filter = {};
+    const searchKeyword = req.query.search || req.query.keyword;
+
     if (req.user.role === "driver") {
       const driver = await Driver.findOne({ userId: req.user.id });
       if (driver) {
@@ -43,8 +49,18 @@ export const getShipments = async (req, res) => {
       }
     } else if (req.user.role === "customer") {
       const orders = await Order.find({ customerId: req.user.id }).select("_id");
-      const orderIds = orders.map(o => o._id);
+      const orderIds = orders.map((o) => o._id);
       filter.orderId = { $in: orderIds };
+    }
+
+    if (searchKeyword) {
+      const regex = new RegExp(String(searchKeyword), "i");
+      filter.$or = [
+        { trackingId: regex },
+        { origin: regex },
+        { destination: regex },
+        { status: regex },
+      ];
     }
 
     const shipments = await Shipment.find(filter).populate("orderId");
@@ -66,6 +82,9 @@ export const getShipments = async (req, res) => {
 export const updateShipment = async (req, res) => {
   try {
     let updateData = { ...req.body };
+    if (updateData.trackingNumber && !updateData.trackingId) {
+      updateData.trackingId = updateData.trackingNumber;
+    }
     if (typeof updateData.currentLocation === "string") {
       updateData.currentLocation = {
         address: updateData.currentLocation,
