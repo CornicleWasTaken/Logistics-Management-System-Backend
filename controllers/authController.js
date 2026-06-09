@@ -76,6 +76,7 @@ export const loginUser = asyncHandler(async (req, res) => {
       id: user._id,
       email: user.email,
       role: user.role,
+      name: user.name,
     },
     process.env.JWT_SECRET,
     {

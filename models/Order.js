@@ -12,14 +12,38 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    items: [
+      {
+        inventoryId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Inventory",
+          required: true,
+        },
+        itemName: {
+          type: String,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+        unitPrice: {
+          type: Number,
+          required: true,
+        },
+        totalPrice: {
+          type: Number,
+          required: true,
+        },
+      },
+    ],
+
     product: {
       type: String,
-      required: true,
     },
 
     quantity: {
       type: Number,
-      required: true,
     },
 
     deliveryAddress: {

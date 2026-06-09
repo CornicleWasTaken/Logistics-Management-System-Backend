@@ -84,6 +84,28 @@ export const getInventoryHistory = async (req, res) => {
   }
 };
 
+// GET INVENTORY CATALOG
+export const getInventoryCatalog = async (req, res) => {
+  try {
+    const inventories = await Inventory.find().select("itemName quantity price warehouse");
+
+    const products = inventories.map((item) => ({
+      id: item._id,
+      itemName: item.itemName,
+      quantity: item.quantity,
+      price: item.price,
+      warehouse: item.warehouse,
+    }));
+
+    res.status(200).json({
+      success: true,
+      products,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // UPDATE INVENTORY
 export const updateInventory = async (req, res) => {
   try {

@@ -1,44 +1,89 @@
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import Inventory from "../models/Inventory.js";
+import User from "../models/User.js";
 
 // CREATE ORDER
 export const createOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
-    const { customerName, product, quantity, deliveryAddress } = req.body;
+    const { deliveryAddress, items } = req.body;
 
-    // Find inventory item
-    const inventoryItem = await Inventory.findOne({
-      itemName: product,
-    });
-
-    if (!inventoryItem) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found in inventory",
-      });
-    }
-
-    // Check stock
-    if (inventoryItem.quantity < quantity) {
+    if (!deliveryAddress || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Insufficient stock",
+        message: "deliveryAddress and items are required",
       });
     }
 
-    // Reduce stock
-    inventoryItem.quantity -= quantity;
+    const customerId = req.user.id;
+    let customerName = req.user.name;
 
-    await inventoryItem.save();
+    if (!customerName) {
+      const user = await User.findById(customerId).select("name");
+      customerName = user?.name || "Customer";
+    }
 
-    // Create order
-    const order = await Order.create({
-      customerId: req.user.id,
+    const orderItems = [];
+    let totalAmount = 0;
+
+    session.startTransaction();
+
+    for (const item of items) {
+      const { inventoryId, quantity } = item;
+
+      if (!inventoryId || !quantity || quantity <= 0) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          success: false,
+          message: "Each item must include inventoryId and a positive quantity",
+        });
+      }
+
+      const inventoryItem = await Inventory.findOneAndUpdate(
+        { _id: inventoryId, quantity: { $gte: quantity } },
+        { $inc: { quantity: -quantity } },
+        { new: true, session },
+      );
+
+      if (!inventoryItem) {
+        await session.abortTransaction();
+        return res.status(409).json({
+          success: false,
+          message: `Insufficient stock for inventory item ${inventoryId}`,
+        });
+      }
+
+      const itemTotal = (inventoryItem.price || 0) * quantity;
+
+      orderItems.push({
+        inventoryId: inventoryItem._id,
+        itemName: inventoryItem.itemName,
+        quantity,
+        unitPrice: inventoryItem.price || 0,
+        totalPrice: itemTotal,
+      });
+
+      totalAmount += itemTotal;
+    }
+
+    const orderData = {
+      customerId,
       customerName,
-      product,
-      quantity,
       deliveryAddress,
-    });
+      items: orderItems,
+      totalAmount,
+    };
+
+    if (orderItems.length === 1) {
+      orderData.product = orderItems[0].itemName;
+      orderData.quantity = orderItems[0].quantity;
+    }
+
+    const [order] = await Order.create([orderData], { session });
+
+    await session.commitTransaction();
 
     res.status(201).json({
       success: true,
@@ -46,10 +91,14 @@ export const createOrder = async (req, res) => {
       order,
     });
   } catch (error) {
+    await session.abortTransaction();
+
     res.status(500).json({
       success: false,
       message: error.message,
     });
+  } finally {
+    session.endSession();
   }
 };
 
