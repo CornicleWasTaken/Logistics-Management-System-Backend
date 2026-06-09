@@ -23,6 +23,18 @@ const inventorySchema = new mongoose.Schema(
     price: {
       type: Number,
     },
+
+    history: [
+      {
+        action: { type: String, required: true },
+        changedBy: { type: String, default: "system" },
+        reason: { type: String, default: "inventory change" },
+        before: { type: mongoose.Schema.Types.Mixed },
+        after: { type: mongoose.Schema.Types.Mixed },
+        changes: { type: mongoose.Schema.Types.Mixed },
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true },
 );

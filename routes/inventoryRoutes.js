@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   addInventory,
   getInventory,
+  getInventoryHistory,
   updateInventory,
   deleteInventory,
 } from "../controllers/inventoryController.js";
@@ -16,6 +17,7 @@ const router = Router();
 router.post("/", protect, authorizeRoles("admin"), addInventory);
 
 router.get("/", protect, getInventory);
+router.get("/:id/history", protect, getInventoryHistory);
 
 router.put("/:id", protect, authorizeRoles("admin"), updateInventory);
 

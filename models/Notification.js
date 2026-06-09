@@ -6,6 +6,8 @@ const notificationSchema = new mongoose.Schema(
     recipient: { type: String, required: true },
     message: { type: String, required: true },
     status: { type: String, enum: ["Pending", "Sent", "Failed"], default: "Pending" },
+    read: { type: Boolean, default: false },
+    readAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

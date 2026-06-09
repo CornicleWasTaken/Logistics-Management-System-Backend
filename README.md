@@ -108,12 +108,44 @@ Features:
 Endpoints:
 POST /api/inventory
 GET /api/inventory
+GET /api/inventory/:id/history
 PUT /api/inventory/:id
 DELETE /api/inventory/:id
 
 Features:
 * Inventory CRUD
 * Low stock monitoring
+* Inventory change history
+* Audit trail for quantity and metadata changes
+
+---
+
+## Notifications Module
+
+Endpoints:
+
+GET /api/notifications
+POST /api/notifications/send
+PUT /api/notifications/:id/read
+
+Features:
+* Notification send support
+* Inbox read / mark-as-read support
+
+---
+
+## Messages Module
+
+Endpoints:
+
+POST /api/messages
+GET /api/messages/customer/:customerId
+GET /api/messages/shipment/:shipmentId
+
+Features:
+* Customer messaging history
+* Shipment thread retrieval
+* Message creation and storage
 
 ---
 
