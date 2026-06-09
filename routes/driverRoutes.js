@@ -1,5 +1,6 @@
 import express from "express";
 import { getDrivers, createDriver, updateDriver, deleteDriver } from "../controllers/driverController.js";
+import { getDriverAssignments } from "../controllers/driverController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
 
