@@ -54,6 +54,32 @@ const shipmentSchema = new mongoose.Schema(
       },
     ],
 
+    // current speed in km/h
+    speed: {
+      type: Number,
+    },
+
+    // estimated arrival time
+    eta: {
+      type: Date,
+    },
+
+    // last seen timestamp for realtime updates
+    lastSeen: {
+      type: Date,
+    },
+
+    // optional route geometry (GeoJSON LineString)
+    routeGeoJSON: {
+      type: {
+        type: String,
+        enum: ["LineString"],
+      },
+      coordinates: {
+        type: [[Number]],
+      },
+    },
+
     status: {
       type: String,
       enum: ["Packed", "In Transit", "Out For Delivery", "Delivered"],

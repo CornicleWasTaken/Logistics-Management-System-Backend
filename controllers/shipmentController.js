@@ -2,6 +2,9 @@ import Shipment from "../models/Shipment.js";
 import Driver from "../models/Driver.js";
 import Vehicle from "../models/Vehicle.js";
 import Order from "../models/Order.js";
+import jwt from "jsonwebtoken";
+import { getIo } from "../sockets/trackingSocket.js";
+import { computeEta } from "../services/etaService.js";
 // CREATE SHIPMENT
 export const createShipment = async (req, res) => {
   try {
@@ -190,5 +193,117 @@ export const getShipmentByTrackingId = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// GET shipment location/history
+export const getShipmentHistory = async (req, res) => {
+  try {
+    const shipment = await Shipment.findById(req.params.id).select("locationHistory status trackingId");
+
+    if (!shipment) {
+      return res.status(404).json({
+        success: false,
+        message: "Shipment not found",
+      });
+    }
+
+    // sort by timestamp ascending
+    const history = (shipment.locationHistory || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    res.status(200).json({
+      success: true,
+      trackingId: shipment.trackingId,
+      history,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Public or authenticated location update (REST fallback for devices/webhooks)
+export const updateShipmentLocationPublic = async (req, res) => {
+  try {
+    // Allow either an API key or a bearer JWT
+    const apiKey = req.headers["x-api-key"];
+    let authorized = false;
+
+    if (apiKey && process.env.TRACKING_API_KEY && apiKey === process.env.TRACKING_API_KEY) {
+      authorized = true;
+    } else if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded) authorized = true;
+      } catch (e) {
+        // invalid token
+      }
+    }
+
+    if (!authorized) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const { coordinates, address, status } = req.body;
+
+    const shipment = await Shipment.findById(req.params.id);
+
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: "Shipment not found" });
+    }
+
+    if (coordinates && Array.isArray(coordinates) && coordinates.length === 2) {
+      shipment.currentLocation.coordinates.coordinates = coordinates;
+      shipment.currentLocation.address = address || shipment.currentLocation.address;
+
+      shipment.locationHistory.push({
+        coordinates,
+        timestamp: new Date(),
+        status: status || shipment.status,
+      });
+    }
+
+    if (status) shipment.status = status;
+
+
+    if (req.body.speed) {
+      shipment.speed = Number(req.body.speed);
+    }
+
+    shipment.lastSeen = new Date();
+
+    // compute ETA if possible
+    try {
+      const eta = computeEta({ currentCoords: shipment.currentLocation.coordinates.coordinates, routeGeoJSON: shipment.routeGeoJSON, speedKmph: shipment.speed });
+      if (eta) shipment.eta = eta;
+    } catch (e) {
+      console.warn("ETA compute failed:", e.message);
+    }
+
+    await shipment.save();
+
+    // Emit realtime update if socket is initialized
+    try {
+      const io = getIo();
+      const payload = {
+        trackingId: shipment.trackingId,
+        coordinates: shipment.currentLocation.coordinates.coordinates,
+        address: shipment.currentLocation.address,
+        status: shipment.status,
+        timestamp: new Date().toISOString(),
+      };
+
+      io.to(`tracking_${shipment.trackingId}`).emit("location_updated", payload);
+    } catch (e) {
+      // Socket may not be initialized in some environments; ignore emit failure
+      console.warn("Socket emit failed:", e.message);
+    }
+
+    res.status(200).json({ success: true, shipment });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

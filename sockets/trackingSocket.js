@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import Shipment from "../models/Shipment.js";
+import { computeEta } from "../services/etaService.js";
 
 let io;
 
@@ -77,35 +78,28 @@ export const initSocket = (server) => {
 
       // 2. Queue for database storage
       try {
-        await Shipment.findOneAndUpdate(
-          {
-            trackingId,
-          },
+        const shipment = await Shipment.findOne({ trackingId });
+        if (shipment) {
+          shipment.currentLocation.address = address || shipment.currentLocation.address;
+          shipment.currentLocation.coordinates.coordinates = coordinates;
+          if (status) shipment.status = status;
+          shipment.locationHistory.push({ coordinates, address, status, timestamp: new Date() });
+          shipment.lastSeen = new Date();
+          if (data.speed) shipment.speed = Number(data.speed);
 
-          {
-            $set: {
-              "currentLocation.address": address || "On Route",
+          // compute ETA
+          try {
+            const eta = computeEta({ currentCoords: shipment.currentLocation.coordinates.coordinates, routeGeoJSON: shipment.routeGeoJSON, speedKmph: shipment.speed });
+            if (eta) shipment.eta = eta;
+          } catch (e) {
+            console.warn("ETA compute failed:", e.message);
+          }
 
-              "currentLocation.coordinates.coordinates": coordinates,
+          await shipment.save();
 
-              ...(status && {
-                status,
-              }),
-            },
-
-            $push: {
-              locationHistory: {
-                coordinates,
-
-                address,
-
-                status,
-
-                timestamp: new Date(),
-              },
-            },
-          },
-        );
+          // include eta in tracking payload if present
+          if (shipment.eta) trackingPayload.eta = shipment.eta.toISOString();
+        }
       } catch (err) {
         console.error("Failed to update location in DB", err);
       }
