@@ -20,6 +20,7 @@ import warehouseRoutes from "./routes/warehouseRoutes.js";
 import dispatchRoutes from "./routes/dispatchRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 
 // ERROR MIDDLEWARE
@@ -102,6 +103,7 @@ app.use("/api", dispatchRoutes);
 
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/customers", customerRoutes);
 
 app.use("/api/reports", reportRoutes);
 

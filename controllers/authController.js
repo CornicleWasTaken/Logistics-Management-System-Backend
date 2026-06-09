@@ -90,3 +90,18 @@ export const loginUser = asyncHandler(async (req, res) => {
     data: user,
   });
 });
+
+// GET /api/auth/me
+export const getMe = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id).select("-password");
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  res.status(200).json({
+    success: true,
+    data: user,
+  });
+});

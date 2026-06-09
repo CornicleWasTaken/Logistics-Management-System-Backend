@@ -1,4 +1,5 @@
 import Driver from "../models/Driver.js";
+import Shipment from "../models/Shipment.js";
 
 // GET /api/drivers
 export const getDrivers = async (req, res) => {
@@ -32,6 +33,28 @@ export const updateDriver = async (req, res) => {
     res.status(200).json({ success: true, data: driver });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// GET /api/drivers/me/assignments
+export const getDriverAssignments = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ userId: req.user.id });
+    if (!driver) {
+      return res.status(404).json({ success: false, message: "Driver profile not found" });
+    }
+
+    const shipments = await Shipment.find({ driverId: driver._id })
+      .populate("orderId")
+      .populate("vehicleId");
+
+    res.status(200).json({
+      success: true,
+      count: shipments.length,
+      shipments,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
