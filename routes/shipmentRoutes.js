@@ -1,5 +1,4 @@
 import { Router } from "express";
-
 import {
   createShipment,
   getShipments,
@@ -10,32 +9,20 @@ import {
   getShipmentHistory,
   updateShipmentLocationPublic,
 } from "../controllers/shipmentController.js";
-
 import { protect } from "../middleware/authMiddleware.js";
-
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
+import { PERMISSIONS } from "../utils/roles.js";
 
 const router = Router();
 
-// CREATE
-router.post("/", protect, authorizeRoles("manager", "admin"), createShipment);
+router.post("/", protect, authorizeRoles(PERMISSIONS.CREATE_SHIPMENTS), createShipment);
+router.get("/", protect, authorizeRoles(PERMISSIONS.READ_SHIPMENTS), getShipments);
+router.put("/:id", protect, authorizeRoles(PERMISSIONS.UPDATE_SHIPMENT_STATUS), updateShipment);
+router.delete("/:id", protect, authorizeRoles(PERMISSIONS.CREATE_SHIPMENTS), deleteShipment);
+router.get("/tracking/:trackingId", protect, authorizeRoles(PERMISSIONS.READ_SHIPMENTS), getShipmentByTrackingId);
+router.get("/:id/history", protect, authorizeRoles(PERMISSIONS.READ_SHIPMENTS), getShipmentHistory);
 
-// GET
-router.get("/", protect, authorizeRoles("manager", "admin", "driver", "customer"), getShipments);
-
-// UPDATE
-router.put("/:id", protect, authorizeRoles("manager", "admin", "driver"), updateShipment);
-
-// DELETE
-router.delete("/:id", protect, authorizeRoles("admin", "manager"), deleteShipment);
-// tracking id
-router.get("/tracking/:trackingId", protect, authorizeRoles("customer", "driver", "manager", "admin"), getShipmentByTrackingId);
-// history
-router.get("/:id/history", protect, authorizeRoles("customer", "driver", "manager", "admin"), getShipmentHistory);
-
-// Public or authenticated location update (devices/webhooks can use x-api-key)
 router.post("/:id/update", updateShipmentLocationPublic);
-//Complete
-router.put("/:id/complete", protect, authorizeRoles("admin", "manager", "driver"), completeShipment);
+router.put("/:id/complete", protect, authorizeRoles(PERMISSIONS.UPDATE_SHIPMENT_STATUS), completeShipment);
 
 export default router;

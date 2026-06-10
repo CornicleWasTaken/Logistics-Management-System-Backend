@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { normalizeRole, ROLE_VALUES, ROLES } from "../utils/roles.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -6,12 +7,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
+      trim: true,
     },
 
     password: {
@@ -21,8 +25,9 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "manager", "driver", "customer"],
-      default: "customer",
+      enum: ROLE_VALUES,
+      default: ROLES.CUSTOMER,
+      set: (value) => normalizeRole(value) || value,
     },
   },
   { timestamps: true },

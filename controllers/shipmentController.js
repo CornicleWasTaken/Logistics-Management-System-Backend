@@ -3,8 +3,13 @@ import Driver from "../models/Driver.js";
 import Vehicle from "../models/Vehicle.js";
 import Order from "../models/Order.js";
 import jwt from "jsonwebtoken";
+import { normalizeRole, PERMISSIONS, ROLES } from "../utils/roles.js";
 import { getIo } from "../sockets/trackingSocket.js";
 import { computeEta } from "../services/etaService.js";
+
+const LIMITED_SHIPMENT_UPDATE_ROLES = new Set([ROLES.DRIVER, ROLES.WAREHOUSE_STAFF]);
+const SHIPMENT_STATUS_UPDATE_FIELDS = new Set(["status", "currentLocation", "speed", "lastSeen"]);
+
 // CREATE SHIPMENT
 export const createShipment = async (req, res) => {
   try {
@@ -40,16 +45,16 @@ export const getShipments = async (req, res) => {
     let filter = {};
     const searchKeyword = req.query.search || req.query.keyword;
 
-    if (req.user.role === "driver") {
+    if (req.user.role === ROLES.DRIVER) {
       const driver = await Driver.findOne({ userId: req.user.id });
       if (driver) {
         filter.driverId = driver._id;
       } else {
-        filter.driverId = null; // Return empty if driver profile not found
+        filter.driverId = null;
       }
-    } else if (req.user.role === "customer") {
+    } else if (req.user.role === ROLES.CUSTOMER) {
       const orders = await Order.find({ customerId: req.user.id }).select("_id");
-      const orderIds = orders.map((o) => o._id);
+      const orderIds = orders.map((order) => order._id);
       filter.orderId = { $in: orderIds };
     }
 
@@ -85,10 +90,25 @@ export const updateShipment = async (req, res) => {
     if (updateData.trackingNumber && !updateData.trackingId) {
       updateData.trackingId = updateData.trackingNumber;
     }
+
     if (typeof updateData.currentLocation === "string") {
       updateData.currentLocation = {
         address: updateData.currentLocation,
       };
+    }
+
+    const userRole = normalizeRole(req.user?.role);
+
+    if (LIMITED_SHIPMENT_UPDATE_ROLES.has(userRole)) {
+      const blockedFields = Object.keys(updateData).filter((field) => !SHIPMENT_STATUS_UPDATE_FIELDS.has(field));
+
+      if (blockedFields.length > 0) {
+        return res.status(403).json({
+          success: false,
+          message: "This role can only update shipment status or location",
+          blockedFields,
+        });
+      }
     }
 
     const existingShipment = await Shipment.findById(req.params.id);
@@ -121,6 +141,7 @@ export const updateShipment = async (req, res) => {
     });
   }
 };
+
 // DELETE SHIPMENT
 export const deleteShipment = async (req, res) => {
   try {
@@ -137,6 +158,7 @@ export const deleteShipment = async (req, res) => {
     });
   }
 };
+
 export const completeShipment = async (req, res) => {
   try {
     const shipment = await Shipment.findById(req.params.id);
@@ -187,6 +209,7 @@ export const completeShipment = async (req, res) => {
     });
   }
 };
+
 export const getShipmentByTrackingId = async (req, res) => {
   try {
     const shipment = await Shipment.findOne({
@@ -227,7 +250,6 @@ export const getShipmentHistory = async (req, res) => {
       });
     }
 
-    // sort by timestamp ascending
     const history = (shipment.locationHistory || []).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     res.status(200).json({
@@ -246,7 +268,6 @@ export const getShipmentHistory = async (req, res) => {
 // Public or authenticated location update (REST fallback for devices/webhooks)
 export const updateShipmentLocationPublic = async (req, res) => {
   try {
-    // Allow either an API key or a bearer JWT
     const apiKey = req.headers["x-api-key"];
     let authorized = false;
 
@@ -256,9 +277,10 @@ export const updateShipmentLocationPublic = async (req, res) => {
       try {
         const token = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded) authorized = true;
-      } catch (e) {
-        // invalid token
+        const role = normalizeRole(decoded.role);
+        if (role && PERMISSIONS.UPDATE_SHIPMENT_STATUS.includes(role)) authorized = true;
+      } catch (error) {
+        authorized = false;
       }
     }
 
@@ -287,24 +309,21 @@ export const updateShipmentLocationPublic = async (req, res) => {
 
     if (status) shipment.status = status;
 
-
     if (req.body.speed) {
       shipment.speed = Number(req.body.speed);
     }
 
     shipment.lastSeen = new Date();
 
-    // compute ETA if possible
     try {
       const eta = computeEta({ currentCoords: shipment.currentLocation.coordinates.coordinates, routeGeoJSON: shipment.routeGeoJSON, speedKmph: shipment.speed });
       if (eta) shipment.eta = eta;
-    } catch (e) {
-      console.warn("ETA compute failed:", e.message);
+    } catch (error) {
+      console.warn("ETA compute failed:", error.message);
     }
 
     await shipment.save();
 
-    // Emit realtime update if socket is initialized
     try {
       const io = getIo();
       const payload = {
@@ -316,9 +335,8 @@ export const updateShipmentLocationPublic = async (req, res) => {
       };
 
       io.to(`tracking_${shipment.trackingId}`).emit("location_updated", payload);
-    } catch (e) {
-      // Socket may not be initialized in some environments; ignore emit failure
-      console.warn("Socket emit failed:", e.message);
+    } catch (error) {
+      console.warn("Socket emit failed:", error.message);
     }
 
     res.status(200).json({ success: true, shipment });

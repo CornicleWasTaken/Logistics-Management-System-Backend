@@ -3,13 +3,14 @@ import { getDrivers, createDriver, updateDriver, deleteDriver } from "../control
 import { getDriverAssignments } from "../controllers/driverController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
+import { ROLES } from "../utils/roles.js";
 
 const router = express.Router();
 
-router.get("/", protect, authorizeRoles("admin", "manager"), getDrivers);
-router.post("/", protect, authorizeRoles("admin"), createDriver);
-router.get("/me/assignments", protect, authorizeRoles("driver"), getDriverAssignments);
-router.put("/:id", protect, authorizeRoles("admin", "manager"), updateDriver);
-router.delete("/:id", protect, authorizeRoles("admin"), deleteDriver);
+router.get("/", protect, authorizeRoles(ROLES.ADMIN, ROLES.MANAGER), getDrivers);
+router.post("/", protect, authorizeRoles(ROLES.ADMIN, ROLES.MANAGER), createDriver);
+router.get("/me/assignments", protect, authorizeRoles(ROLES.DRIVER), getDriverAssignments);
+router.put("/:id", protect, authorizeRoles(ROLES.ADMIN, ROLES.MANAGER), updateDriver);
+router.delete("/:id", protect, authorizeRoles(ROLES.ADMIN), deleteDriver);
 
 export default router;

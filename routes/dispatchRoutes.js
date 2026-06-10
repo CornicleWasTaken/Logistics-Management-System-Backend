@@ -6,12 +6,12 @@ import {
 } from "../controllers/dispatchController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
+import { PERMISSIONS } from "../utils/roles.js";
 
 const router = express.Router();
 
-// Mount this base inside server.js under `/api`
-router.post("/shipments/:id/assign", protect, authorizeRoles("admin", "manager"), assignDispatch);
-router.get("/shipments/:id/tracking", protect, authorizeRoles("admin", "manager", "driver", "customer"), getTrackingDetails);
-router.post("/dispatch/optimize-route", protect, authorizeRoles("admin", "manager"), optimizeRoute);
+router.post("/shipments/:id/assign", protect, authorizeRoles(PERMISSIONS.CREATE_SHIPMENTS), assignDispatch);
+router.get("/shipments/:id/tracking", protect, authorizeRoles(PERMISSIONS.READ_SHIPMENTS), getTrackingDetails);
+router.post("/dispatch/optimize-route", protect, authorizeRoles(PERMISSIONS.VIEW_ANALYTICS), optimizeRoute);
 
 export default router;

@@ -22,6 +22,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 // ERROR MIDDLEWARE
 import errorHandler from "./middleware/errorMiddleware.js";
@@ -106,6 +107,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/customers", customerRoutes);
 
 app.use("/api/reports", reportRoutes);
+app.use("/api/users", userRoutes);
 
 // ERROR HANDLER
 app.use(errorHandler);

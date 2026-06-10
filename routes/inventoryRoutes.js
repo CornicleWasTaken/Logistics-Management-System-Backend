@@ -1,5 +1,4 @@
 import { Router } from "express";
-
 import {
   addInventory,
   getInventory,
@@ -8,21 +7,20 @@ import {
   updateInventory,
   deleteInventory,
 } from "../controllers/inventoryController.js";
-
 import { protect } from "../middleware/authMiddleware.js";
-
 import { authorizeRoles } from "../middleware/roleMiddleware.js";
+import { PERMISSIONS, ROLES } from "../utils/roles.js";
 
 const router = Router();
 
-router.post("/", protect, authorizeRoles("admin"), addInventory);
+router.post("/", protect, authorizeRoles(PERMISSIONS.MANAGE_INVENTORY), addInventory);
 
-router.get("/catalog", protect, authorizeRoles("customer", "manager", "admin"), getInventoryCatalog);
-router.get("/", protect, getInventory);
-router.get("/:id/history", protect, getInventoryHistory);
+router.get("/catalog", protect, authorizeRoles(ROLES.CUSTOMER, ...PERMISSIONS.MANAGE_INVENTORY), getInventoryCatalog);
+router.get("/", protect, authorizeRoles(PERMISSIONS.MANAGE_INVENTORY), getInventory);
+router.get("/:id/history", protect, authorizeRoles(PERMISSIONS.MANAGE_INVENTORY), getInventoryHistory);
 
-router.put("/:id", protect, authorizeRoles("admin"), updateInventory);
+router.put("/:id", protect, authorizeRoles(PERMISSIONS.MANAGE_INVENTORY), updateInventory);
 
-router.delete("/:id", protect, authorizeRoles("admin"), deleteInventory);
+router.delete("/:id", protect, authorizeRoles(PERMISSIONS.MANAGE_INVENTORY), deleteInventory);
 
 export default router;
