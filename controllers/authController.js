@@ -31,6 +31,18 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getEmailQuery(email) {
+  return { email: new RegExp(`^${escapeRegex(email)}$`, "i") };
+}
+
+function findUserByEmail(email) {
+  return User.findOne(getEmailQuery(email));
+}
+
 function resolveRequestedRole(role) {
   const normalizedRole = normalizeRole(role) || ROLES.CUSTOMER;
 
@@ -80,7 +92,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     throw new Error("Only an admin can create staff accounts. Use admin bootstrap or /api/users with admin login.");
   }
 
-  const existingUser = await User.findOne({ email: normalizedEmail });
+  const existingUser = await findUserByEmail(normalizedEmail);
 
   if (existingUser) {
     res.status(400);
@@ -116,21 +128,22 @@ export const bootstrapAdmin = asyncHandler(async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  const user = await User.findOneAndUpdate(
-    { email: normalizedEmail },
-    {
+  let user = await findUserByEmail(normalizedEmail);
+
+  if (user) {
+    user.name = name;
+    user.email = normalizedEmail;
+    user.password = hashedPassword;
+    user.role = ROLES.ADMIN;
+    await user.save();
+  } else {
+    user = await User.create({
       name,
       email: normalizedEmail,
       password: hashedPassword,
       role: ROLES.ADMIN,
-    },
-    {
-      new: true,
-      runValidators: true,
-      setDefaultsOnInsert: true,
-      upsert: true,
-    },
-  );
+    });
+  }
   const token = signToken(user);
 
   res.status(200).json({
@@ -146,7 +159,7 @@ export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const normalizedEmail = normalizeEmail(email);
 
-  const user = await User.findOne({ email: normalizedEmail });
+  const user = await findUserByEmail(normalizedEmail);
 
   if (!user) {
     res.status(401);
