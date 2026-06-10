@@ -27,6 +27,10 @@ function signToken(user) {
   );
 }
 
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
 function resolveRequestedRole(role) {
   const normalizedRole = normalizeRole(role) || ROLES.CUSTOMER;
 
@@ -39,6 +43,23 @@ function resolveRequestedRole(role) {
   return normalizedRole;
 }
 
+function assertBootstrapKey(req) {
+  const configuredKey = process.env.ADMIN_BOOTSTRAP_KEY;
+  const providedKey = req.headers["x-admin-bootstrap-key"] || req.body.bootstrapKey;
+
+  if (!configuredKey) {
+    const error = new Error("Admin bootstrap key is not configured on backend");
+    error.statusCode = 503;
+    throw error;
+  }
+
+  if (!providedKey || providedKey !== configuredKey) {
+    const error = new Error("Invalid admin bootstrap key");
+    error.statusCode = 403;
+    throw error;
+  }
+}
+
 // REGISTER USER
 export const registerUser = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
@@ -49,14 +70,14 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   const { name, email, password, role } = req.body;
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
   const requestedRole = resolveRequestedRole(role);
   const adminExists = await User.exists({ role: ROLES.ADMIN });
   const isFirstAdminBootstrap = requestedRole === ROLES.ADMIN && !adminExists;
 
   if (PRIVILEGED_ROLES.has(requestedRole) && !isFirstAdminBootstrap) {
     res.status(403);
-    throw new Error("Only an admin can create staff accounts");
+    throw new Error("Only an admin can create staff accounts. Use admin bootstrap or /api/users with admin login.");
   }
 
   const existingUser = await User.findOne({ email: normalizedEmail });
@@ -82,10 +103,48 @@ export const registerUser = asyncHandler(async (req, res) => {
   });
 });
 
+// SECURE ADMIN BOOTSTRAP / RESET
+export const bootstrapAdmin = asyncHandler(async (req, res) => {
+  assertBootstrapKey(req);
+
+  const { name, email, password } = req.body;
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!name || !normalizedEmail || !password) {
+    res.status(400);
+    throw new Error("name, email, and password are required");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await User.findOneAndUpdate(
+    { email: normalizedEmail },
+    {
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+      role: ROLES.ADMIN,
+    },
+    {
+      new: true,
+      runValidators: true,
+      setDefaultsOnInsert: true,
+      upsert: true,
+    },
+  );
+  const token = signToken(user);
+
+  res.status(200).json({
+    success: true,
+    message: "Admin bootstrap completed",
+    token,
+    data: user,
+  });
+});
+
 // LOGIN USER
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(email);
 
   const user = await User.findOne({ email: normalizedEmail });
 
