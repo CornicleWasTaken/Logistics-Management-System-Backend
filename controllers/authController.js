@@ -49,15 +49,17 @@ export const registerUser = asyncHandler(async (req, res) => {
   }
 
   const { name, email, password, role } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
   const requestedRole = resolveRequestedRole(role);
-  const usersCount = await User.estimatedDocumentCount();
+  const adminExists = await User.exists({ role: ROLES.ADMIN });
+  const isFirstAdminBootstrap = requestedRole === ROLES.ADMIN && !adminExists;
 
-  if (PRIVILEGED_ROLES.has(requestedRole) && usersCount > 0) {
+  if (PRIVILEGED_ROLES.has(requestedRole) && !isFirstAdminBootstrap) {
     res.status(403);
     throw new Error("Only an admin can create staff accounts");
   }
 
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ email: normalizedEmail });
 
   if (existingUser) {
     res.status(400);
@@ -68,7 +70,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 
   const user = await User.create({
     name,
-    email,
+    email: normalizedEmail,
     password: hashedPassword,
     role: requestedRole,
   });
@@ -83,12 +85,13 @@ export const registerUser = asyncHandler(async (req, res) => {
 // LOGIN USER
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: normalizedEmail });
 
   if (!user) {
     res.status(401);
-    throw new Error("Invalid email");
+    throw new Error("No account found for this email");
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
